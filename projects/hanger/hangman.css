@@ -1,0 +1,84 @@
+#hanger {
+height: 385px;
+width: 410px;
+position: absolute;
+top: 0px;
+left: 0px;
+display: block;
+background-color: green;
+}
+
+#Wordspace {
+  display: block;
+position: absolute;
+top: 0%;
+left: 30%;
+height: 25%;
+width: 70%;
+background-color: #ffa31a;
+padding-top: 2%;
+}
+
+#LoseWin {
+        display: none;
+    position: absolute;
+    z-index: 25;
+    height: 39%;
+    width: 62%;
+    background-color: #0099ff;
+    top: 15%;
+    left: 17%;
+    font-size: 71px;
+    color: #ffb31a;
+    font-family: Georgia;
+    text-align: center;
+    padding-top: 67px;
+    -webkit-box-shadow: 50px 25px 20px 11px rgba(0,0,0,0.75);
+-moz-box-shadow: 50px 25px 20px 11px rgba(0,0,0,0.75);
+box-shadow: 50px 25px 20px 11px rgba(0,0,0,0.75);
+}
+
+.empty {
+  display: inline;
+margin-left: 3%;
+top: 5%;
+position: relative;
+}
+
+#LetterBoard {
+  list-style: none;
+  position: absolute;
+  display: inline-block;
+  width: 50%;
+  top:30%;
+  left: 35%;
+}
+
+div > ul {
+  position: relative;
+  display: inline-block;
+  margin-right: 10%;
+}
+
+div> ul > li {
+  padding-bottom: 10px;
+}
+
+#butt {
+    border: solid;
+border-radius: 50%;
+border-color: gold;
+font-family: Georgia;
+font-size: 22px;
+background-color: black;
+margin-top: 15px;
+color: yellow;
+text-align: center;
+position: relative;
+border-width: 4px;
+height: 35px;
+width: 146px;
+padding-top: 8px;
+align-self: center;
+left: 40%;
+}

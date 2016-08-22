@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link type="text/css" rel="stylesheet" href="spotifyify.css"/>
+        <title>Spotifytify! </title>
+
+    </head>
+    <body>
+        <div>
+            <input id="input">
+            </input>
+            <select id="select">
+                <option value="artist"> Artists </option>
+                <option value="album">Albums</option>
+            </select>
+            <a id="butt">submit </a>
+        </div>
+        <div>
+            <p id="resultsFor"> </p>
+        </div>
+        <div>
+            <ul id="resultsBoard">
+            </ul>
+             <script id="kidMeNot" type="handlebarscript/mous">
+                {{#.}}
+                <li> <img src= {{img}} /> <a href= {{spotifyURL}} >{{name}} </a>
+                {{/.}}
+             </script>
+        </div>
+        <div>
+            <span id="moar"> Moar!!
+            </span>
+        </div>
+        <script
+			  src="https://code.jquery.com/jquery-3.1.0.js"
+			  integrity="sha256-slogkvB1K3VOkzAI8QITxV3VzpOnkeNVsKvtkYLMjfk="
+			  crossorigin="anonymous">
+        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
+        <script src="spotifyify.js">
+        </script>
+    </body>
+</html>

@@ -1,0 +1,21 @@
+body {
+  overflow: hidden;
+}
+
+#wrapper {
+    left: 0px;
+    top: 0px;
+    position: absolute;
+}
+
+#ticker {
+white-space: nowrap;
+overflow: hidden;
+color: black;
+position: absolute;
+left: 100%;
+}
+
+div > a {
+  padding-left: 28px;
+}
