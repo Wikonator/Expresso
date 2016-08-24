@@ -9,12 +9,11 @@ var https = require("https");
 var twitterKey = require("./projects/ticker/main.json");
 
 function getToken(key) {
-    console.log(key.consumerKey + ":" + key.consumerSecret);
     return Buffer(key.consumerKey + ":" + key.consumerSecret).toString("base64");
 }
 
 var readyToSend = getToken(twitterKey);
-console.log(readyToSend);
+
 
 
 app.engine("handlebars", handles());
@@ -27,6 +26,8 @@ app.use(require("cookie-parser")());
 var arrayOfContent = fs.readdirSync("./projects");
 
 feeder(arrayOfContent);
+
+var breakingNews = {};
 
 function feeder(array) {
     var arrayToGo = [];
@@ -88,11 +89,11 @@ app.get("/tweets", function(req, res, next) {
     //check if you have a twitter key if not get it if yes move on with your life
     if (!twitterToken) {
         aLittleStep();
-        console.log("taking a Little Step");
     } else {
         getMeTweets(twitterToken);
     }
 });
+
 
 var options = {
     hostname: 'api.twitter.com',
@@ -105,6 +106,7 @@ var options = {
     }
 };
 
+
     function aLittleStep() {
         var req = https.request(options, function (res) {
             var frank = "";
@@ -112,8 +114,10 @@ var options = {
                 frank += data;
             });
             res.on("end", function() {
-                console.log(frank);
-                twitterToken = frank;
+                // console.log(frank);
+                twitterToken = JSON.parse(frank);
+                AccToken = "Bearer " + twitterToken.access_token;
+                getMeTweets(twitterToken);
             });
 
         });
@@ -121,14 +125,40 @@ var options = {
         req.end();
     }
 
-// function getMeTweets(token) {
-//     var req = https.request(options, res, function() {
-//         var options = {
-//             path: /1.1/statuses/user_timeline.json?screen_name=theonion
-//         }
-//     })
-// }
-//
+var AccToken;
+var text;
+var links;
+
+function getMeTweets(token) {
+
+    var tweetOptions = {
+        hostname: "api.twitter.com",
+        port: 443,
+        path: "/1.1/statuses/user_timeline.json?screen_name=theonion",
+        method: "GET",
+        "headers": {
+            Authorization: AccToken
+        }
+    };
+    var req = https.request(tweetOptions, function(res) {
+        res.on("error", function(error) {
+            console.log(error);
+        });
+        req.on("error", function(error) {
+            console.log(error);
+        });
+        var frank = "";
+        res.on("data", function(data) {
+            frank += data;
+        });
+        res.on("end", function() {
+            breakingNews = JSON.parse(frank);
+            
+        });
+    });
+         req.end();
+}
+
     app.post ("/name", function(req, res, next) {
         res.cookie("firstName", req.body.firstName);
         res.cookie("lastName", req.body.lastName);

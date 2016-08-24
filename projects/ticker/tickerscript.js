@@ -7,8 +7,6 @@
 
  $.getJSON("/tweets", transformObject);
 
-
-
 function transformObject(data) {
     var transformedData = [];
     for (var key in data) {
