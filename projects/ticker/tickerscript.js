@@ -5,32 +5,9 @@
       var links = [];
       var headers = [];
 
-$.getJSON("tickersheadlines.json", transformObject);
+ $.getJSON("/tweets", transformObject);
 
-// request.open("GET", "tickersheadlines.json");
-//
-// request.send();
-//
-// request.addEventListener("readystatechange", function() {
-//     if (request.readyState == XMLHttpRequest.DONE) {
-//         try {
-//             var status = request.status;
-//         } catch(e) {
-//             console.log(e);
-//             return;
-//         }
-//         if (status != 200) {
-//             console.log(e);
-//         }
-//         try {
-//             var data = JSON.parse(request.responseText);
-//             tagify(data);
-//         } catch(e) {
-//             console.log("bad JSON");
-//             return;
-//         }
-//     }
-// });
+
 
 function transformObject(data) {
     var transformedData = [];

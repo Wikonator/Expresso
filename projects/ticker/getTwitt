@@ -1,0 +1,13 @@
+var https = require("https");
+
+var tokenEveryday = $.getJSON("main.json", function (data) {
+    return data;
+});
+
+var key = tokenEveryday.consumerKey + tokenEveryday.consumerSecret;
+
+var basedKey = Buffer(key).toString("base64");
+
+var options = {
+    
+}
