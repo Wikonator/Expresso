@@ -7,6 +7,9 @@ var feedMeArrays = {};
 var twitterToken;
 var https = require("https");
 var twitterKey = require("./projects/ticker/main.json");
+var AccToken;
+var arrayFromTwitter = [];
+
 
 function getToken(key) {
     return Buffer(key.consumerKey + ":" + key.consumerSecret).toString("base64");
@@ -67,33 +70,35 @@ app.use(require("body-parser").urlencoded({
     extended: false
 }));
 
-
 app.get("/name", function (req, res) {
-    res.render("hello", feedMeArrays);
+    res.sendFile(__dirname + "/statics/name.html");
 });
 
-// app.get("/:project/description", function (req, res) {
-//     if (arrayOfContent.contains(req.params.project)) {
-//         res.render(req.params.project + "/index", {
-//             array:[{
-//                 firstName: req1.cookies.firstName,
-//                 headerLinks: ,
-//                 headerTags: ,
-//             }
-//         ]
-//     }//the link that goes to the index.html of the project page )
-// )}
-// });
+app.get("/:project/description", function (req, res) {
+    console.log(arrayOfContent);
+    console.log(req.params.project);
+    if (arrayOfContent.indexOf(req.params.project) != -1) {
+        res.render(req.params.project + "/index", {
+            array:[{
+                firstName: req.cookies.firstName,
+                headerLinks: "/http:" + arrayOfContent,
+                headerTags: arrayOfContent
+            }]});
+    //the link that goes to the index.html of the project page )
+} else {
+    console.log("I have nothing to say to you");
+}
+});
 
 app.get("/tweets", function(req, res, next) {
-    //check if you have a twitter key if not get it if yes move on with your life
-    if (!twitterToken) {
-        aLittleStep();
-    } else {
-        getMeTweets(twitterToken);
-    }
+    aLittleStep(function callBack(error, data) {
+        console.log("callback happened");
+        if (error) {
+            res.status(500).send("Ehm dude, the forrest's on fire...");
+        }
+        res.send(data);
+    });
 });
-
 
 var options = {
     hostname: 'api.twitter.com',
@@ -106,30 +111,25 @@ var options = {
     }
 };
 
-
-    function aLittleStep() {
-        var req = https.request(options, function (res) {
-            var frank = "";
-            res.on("data", function(data) {
-                frank += data;
-            });
-            res.on("end", function() {
-                // console.log(frank);
-                twitterToken = JSON.parse(frank);
-                AccToken = "Bearer " + twitterToken.access_token;
-                getMeTweets(twitterToken);
-            });
-
+function aLittleStep(callBack) {
+    var req = https.request(options, function (res) {
+        var frank = "";
+        res.on("data", function(data) {
+            frank += data;
         });
-        req.write("grant_type=client_credentials");
-        req.end();
-    }
+        res.on("end", function() {
+            // console.log(frank);
+            twitterToken = JSON.parse(frank);
+            AccToken = "Bearer " + twitterToken.access_token;
+            getMeTweets(twitterToken, callBack);
+        });
 
-var AccToken;
-var text;
-var links;
+    });
+    req.write("grant_type=client_credentials");
+    req.end();
+}
 
-function getMeTweets(token) {
+function getMeTweets(token, callBack) {
 
     var tweetOptions = {
         hostname: "api.twitter.com",
@@ -142,33 +142,45 @@ function getMeTweets(token) {
     };
     var req = https.request(tweetOptions, function(res) {
         res.on("error", function(error) {
-            console.log(error);
+            callBack(error);
         });
         req.on("error", function(error) {
-            console.log(error);
+            callBack(error);
         });
         var frank = "";
         res.on("data", function(data) {
             frank += data;
         });
         res.on("end", function() {
+            var arrayForHandlebars = [];
             breakingNews = JSON.parse(frank);
-            
+            for (var j = 0; j < breakingNews.length; j++) {
+                var breakingPoint = breakingNews[j].text.split("https");
+                var oneNewObject = {
+                    url: "https" + breakingPoint[1],
+                    name: breakingPoint[0]
+                };
+                arrayForHandlebars.push(oneNewObject);
+            }
+            callBack(null, arrayForHandlebars);
         });
     });
-         req.end();
+    req.end();
 }
 
-    app.post ("/name", function(req, res, next) {
-        res.cookie("firstName", req.body.firstName);
-        res.cookie("lastName", req.body.lastName);
-        feedMeSluts = {
-            firstName: req.body.firstName
-        };
-        next();
-    });
+app.post ("/name", function(req, res, next) {
+    res.cookie("firstName", req.body.firstName);
+    res.cookie("lastName", req.body.lastName);
+    feedMeArrays.firstName = req.body.firstName;
+    console.log(feedMeArrays);
+    res.render("hello", feedMeArrays);
+});
+
+app.get("/hello", function (req, res) {
+    res.render("hello", feedMeArrays);
+});
 
 
-    app.listen(9002);
+app.listen(9002);
 
-    console.log("zog em to gog!");
+console.log("zog em to gog!");

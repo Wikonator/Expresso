@@ -1,26 +1,28 @@
 (function() {
 
-      var tick = $("#ticker");
-      var here = tick.offset().left;
-      var links = [];
-      var headers = [];
+    var tick = $("#ticker");
+    var here = tick.offset().left;
+    var links = [];
+    var headers = [];
 
- $.getJSON("/tweets", transformObject);
+    $.getJSON("/tweets", tagify);
 
-function transformObject(data) {
-    var transformedData = [];
-    for (var key in data) {
-        var ourObject = {
-            name: key,
-            url: data[key]
-        };
-        transformedData.push(ourObject);
-    }
-    tagify(transformedData);
-}
+    // function transformObject(data) {
+    //     var transformedData = [];
+    //     for (var key in data) {
+    //         var ourObject = {
+    //             name: key,
+    //             url: data[key]
+    //         };
+    //         transformedData.push(ourObject);
+    //     }
+    //     tagify(transformedData);
+    // }
 
 
 function tagify(data) {
+    data = data.array;
+    console.log(data);
     var readyToUse = fillThePlaceholders(data);
     tick.html(readyToUse);
  }
@@ -50,7 +52,4 @@ var fillThePlaceholders = Handlebars.compile(template);
 
 headlines = $("#a").html;
 tick.hover(stopThisMaddness, getJiggy);
-
-
-
 })();
