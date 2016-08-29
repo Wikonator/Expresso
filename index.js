@@ -4,20 +4,11 @@ var cooks;
 var handles = require("express-handlebars");
 var fs = require("fs");
 var feedMeArrays = {};
-var twitterToken;
+var getTwitt = require("./getTwitt.js");
 var https = require("https");
-var twitterKey = require("./projects/ticker/main.json");
-var AccToken;
+// var twitterKey = require("./projects/ticker/main.json");
+
 var arrayFromTwitter = [];
-
-
-function getToken(key) {
-    return Buffer(key.consumerKey + ":" + key.consumerSecret).toString("base64");
-}
-
-var readyToSend = getToken(twitterKey);
-
-
 
 app.engine("handlebars", handles());
 app.set("view engine", "handlebars");
@@ -90,83 +81,46 @@ app.get("/:project/description", function (req, res) {
 }
 });
 
+//import the function below from getTwitt
+
 app.get("/tweets", function(req, res, next) {
-    aLittleStep(function callBack(error, data) {
-        console.log("callback happened");
-        if (error) {
-            res.status(500).send("Ehm dude, the forrest's on fire...");
-        }
-        res.send(data);
+    console.log("tweets are happening");
+    getTwitt.getTweets().then(function(tweets) {
+        res.json(tweets);
+    }).catch(function(err) {
+        console.log(err);
+        res.sendStatus(500);
     });
 });
 
-var options = {
-    hostname: 'api.twitter.com',
-    port: 443,
-    path: '/oauth2/token',
-    method: 'POST',
-    "headers": {
-        Authorization: "Basic " + readyToSend,
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-    }
-};
+// var options = {
+//     hostname: 'api.twitter.com',
+//     port: 443,
+//     path: '/oauth2/token',
+//     method: 'POST',
+//     "headers": {
+//         Authorization: "Basic " + readyToSend,
+//         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+//     }
+// };
 
-function aLittleStep(callBack) {
-    var req = https.request(options, function (res) {
-        var frank = "";
-        res.on("data", function(data) {
-            frank += data;
-        });
-        res.on("end", function() {
-            // console.log(frank);
-            twitterToken = JSON.parse(frank);
-            AccToken = "Bearer " + twitterToken.access_token;
-            getMeTweets(twitterToken, callBack);
-        });
-
-    });
-    req.write("grant_type=client_credentials");
-    req.end();
-}
-
-function getMeTweets(token, callBack) {
-
-    var tweetOptions = {
-        hostname: "api.twitter.com",
-        port: 443,
-        path: "/1.1/statuses/user_timeline.json?screen_name=theonion",
-        method: "GET",
-        "headers": {
-            Authorization: AccToken
-        }
-    };
-    var req = https.request(tweetOptions, function(res) {
-        res.on("error", function(error) {
-            callBack(error);
-        });
-        req.on("error", function(error) {
-            callBack(error);
-        });
-        var frank = "";
-        res.on("data", function(data) {
-            frank += data;
-        });
-        res.on("end", function() {
-            var arrayForHandlebars = [];
-            breakingNews = JSON.parse(frank);
-            for (var j = 0; j < breakingNews.length; j++) {
-                var breakingPoint = breakingNews[j].text.split("https");
-                var oneNewObject = {
-                    url: "https" + breakingPoint[1],
-                    name: breakingPoint[0]
-                };
-                arrayForHandlebars.push(oneNewObject);
-            }
-            callBack(null, arrayForHandlebars);
-        });
-    });
-    req.end();
-}
+// function aLittleStep(callBack) {
+//     var req = https.request(options, function (res) {
+//         var frank = "";
+//         res.on("data", function(data) {
+//             frank += data;
+//         });
+//         res.on("end", function() {
+//             // console.log(frank);
+//             twitterToken = JSON.parse(frank);
+//             AccToken = "Bearer " + twitterToken.access_token;
+//             getMeTweets(twitterToken, callBack);
+//         });
+//
+//     });
+//     req.write("grant_type=client_credentials");
+//     req.end();
+// }
 
 app.post ("/name", function(req, res, next) {
     res.cookie("firstName", req.body.firstName);

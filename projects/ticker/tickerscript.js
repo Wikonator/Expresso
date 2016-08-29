@@ -5,7 +5,7 @@
     var links = [];
     var headers = [];
 
-    $.getJSON("/tweets", tagify);
+    $.getJSON("/tweets").then(tagify);
 
     // function transformObject(data) {
     //     var transformedData = [];
@@ -21,7 +21,7 @@
 
 
 function tagify(data) {
-    data = data.array;
+    // data = data.array;
     console.log(data);
     var readyToUse = fillThePlaceholders(data);
     tick.html(readyToUse);

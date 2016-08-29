@@ -1,0 +1,55 @@
+fs = require("fs");
+
+function readMyDir(path) {
+    return new Promise(function (resolve,reject) {
+        fs.readdir(path, function (err, data) {
+            if (err === true) {
+                reject (err);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+}
+
+function showMe(data) {
+    console.log(data);
+}
+
+function mapTheArray(array) {
+    array.map(whatSorceryIsThis())
+}
+
+function whatSorceryIsThis(path) {
+    return new Promise(function (resolve,reject) {
+        fs.stat(path, function(error, info) {
+            if (error === true) {
+                reject (error);
+            } else {
+                resolve ();
+                }
+            }
+        });
+    });
+}
+
+function loop(array) {
+    showMe(array);
+    for (var i = 0; i < array.length ; i++) {
+        console.log(array[i]);
+        var oneLoop = whatSorceryIsThis("./" + array[i]).then(isDirectory());
+        if (oneLoop) {
+            console.log(array[i] + " is a directory!");
+        } else {
+            console.log(array[i] + " ain't a directory!");
+            }
+    }
+}
+
+readMyDir(".").then(whatSorceryIsThis).catch(function(err){
+    showMe(err);
+});
+
+// whatSorceryIsThis("./index.js").then(loopyLoop);
+
+// module.export(readMyDir);
