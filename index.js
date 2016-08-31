@@ -6,6 +6,9 @@ var fs = require("fs");
 var feedMeArrays = {};
 var getTwitt = require("./getTwitt.js");
 var https = require("https");
+var pg = require("pg");
+
+
 // var twitterKey = require("./projects/ticker/main.json");
 
 var arrayFromTwitter = [];
@@ -93,40 +96,30 @@ app.get("/tweets", function(req, res, next) {
     });
 });
 
-// var options = {
-//     hostname: 'api.twitter.com',
-//     port: 443,
-//     path: '/oauth2/token',
-//     method: 'POST',
-//     "headers": {
-//         Authorization: "Basic " + readyToSend,
-//         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-//     }
-// };
+function addUser(firstName, lastName) {
+  var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
+  client.connect(function(err) {
+    if (err) {
+      console.log("no connection happened");
+      throw err;
+    }
+  });
+  var input = 'INSERT INTO usernames (first_name, last_name) VALUES ($1, $2) RETURNING id';
 
-// function aLittleStep(callBack) {
-//     var req = https.request(options, function (res) {
-//         var frank = "";
-//         res.on("data", function(data) {
-//             frank += data;
-//         });
-//         res.on("end", function() {
-//             // console.log(frank);
-//             twitterToken = JSON.parse(frank);
-//             AccToken = "Bearer " + twitterToken.access_token;
-//             getMeTweets(twitterToken, callBack);
-//         });
-//
-//     });
-//     req.write("grant_type=client_credentials");
-//     req.end();
-// }
+  client.query(input, [firstName, lastName], function(error, results) {
+    console.log(results.rows);
+    client.end();
+  });
+}
 
 app.post ("/name", function(req, res, next) {
-    res.cookie("firstName", req.body.firstName);
-    res.cookie("lastName", req.body.lastName);
-    feedMeArrays.firstName = req.body.firstName;
-    console.log(feedMeArrays);
+    var firstName = req.body.firstName;
+    var lastName = req.body.lastName;
+    res.cookie("firstName", firstName);
+    res.cookie("lastName", lastName);
+    feedMeArrays.firstName = firstName;
+    addUser(firstName,lastName);
+    console.log(firstName);
     res.render("hello", feedMeArrays);
 });
 
