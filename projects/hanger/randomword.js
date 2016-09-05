@@ -1,4 +1,4 @@
-      var xhr = new XMLHttpRequest;
+       var xhr = new XMLHttpRequest;
       var word = "";
       var letterArray;
       var spannySpans;
@@ -37,7 +37,7 @@ canvasGo();
 booty();
 
 function booty() {
-    xhr.open("GET", "http://randomword.setgetgo.com/get.php?len=6");
+    xhr.open("GET", "http://www.setgetgo.com/randomword/get.php?len=6");
 
     xhr.send();
 
