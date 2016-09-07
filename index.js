@@ -1,14 +1,22 @@
-var express = require("express");
-var app = express();
-var cooks;
-var handles = require("express-handlebars");
-var fs = require("fs");
-var feedMeArrays = {};
-var getTwitt = require("./getTwitt.js");
-var https = require("https");
-var pg = require("pg");
+var express = require("express"),
+redis = require("redis"),
+cache = redis.createClient({
+    host: "localhost",
+    port: 6379
+}),
+app = express(),
+cooks,
+handles = require("express-handlebars"),
+fs = require("fs"),
+feedMeArrays = {},
+getTwitt = require("./getTwitt.js"),
+https = require("https"),
+pg = require("pg");
 
 
+cache.on('error', function(err) {
+    console.log(err);
+});
 // var twitterKey = require("./projects/ticker/main.json");
 
 var arrayFromTwitter = [];
@@ -96,42 +104,93 @@ app.get("/tweets", function(req, res, next) {
     });
 });
 
+
 app.get("/users", function (req, res, next) {
-  console.log("users requested");
-  var allMyUsers = [];
-  var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
-  client.connect(function(err) {
-    if (err) {
-      console.log("couldnt connect to the tables yo");
-      throw err;
-    }
+    console.log(req.query);
 
-    var checkEm;
-    client.query("SELECT * FROM usernames;", function(error, results) {
-      if (error) {
-        console.log("could not get usernames, fam");
-        throw error;
-      }
-      checkEm = results;
-      client.end();
-      function createArrForHandlebars(results) {
-        allMyUsers = results.rows;
-        res.render("users", {
-          myUsers: allMyUsers,
-          cookieName : req.cookies.firstName
+    function createArrForHandlebars(results) {
+        var allMyUsers = results.rows;
+        // console.log("createArrForHandlebars ran" + allMyUsers);
+        cityItems = allMyUsers.map(function(cv,ind,arr){
+            return cv.city
         });
-        console.log(req.cookies.firstName);
-      };
+        colorItems = allMyUsers.map(function(cv,ind,arr){
+            return cv.color
+        });
+        function makeUniqueItems(items) {
+            var checkArray = [];
+            items.forEach(function(item){
+                if (checkArray.indexOf(item) == -1) {
+                    checkArray.push(item);
+                }
+            });
+            return checkArray;
+        }
 
-      createArrForHandlebars(checkEm);
-      // console.log(checkEm);
+            cityItems = makeUniqueItems(cityItems),
+            colorItems = makeUniqueItems(colorItems);
+            console.log(colorItems);
+            res.render("users", {
+                city: cityItems,
+                color: colorItems,
+                myUsers: allMyUsers,
+                cookieName : req.cookies.firstName
+            });
+    };
+
+    cache.get("users", function(err, data){
+        console.log(err);
+        if (data !== null) {
+            var results = JSON.parse(data);
+            return createArrForHandlebars(results);
+        }
     });
-  });
+
+
+    var allMyUsers = [];
+    var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
+    client.connect(function(err) {
+        if (err) {
+            console.log("couldnt connect to the tables yo");
+            throw err;
+        }
+        var checkEm;
+            if (req.query === "") {
+                client.query("SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id;"
+                , function(error, results) {
+                    if (error) {
+                        console.log("could not get usernames, fam");
+                        throw error;
+                    }
+                    checkEm = results;
+                    var cityItems = [],
+                    colorItems = [];
+                    // console.log(checkEm);
+                    createArrForHandlebars(checkEm);
+                    client.end();
+                });
+                // console.log(checkEm);
+            } else {
+                var city = req.query.city,
+                color = req.query.color,
+                input = "SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id WHERE city = '" +city+"' AND color = '" + color+"';"
+                client.query(input, function(err, results) {
+                    if (err) {
+                        console.log("couldnt get specified search");
+                        throw err;
+                    }
+                    checkEm = results;
+                    createArrForHandlebars(checkEm);
+                })
+            }
+    });
 });
 
+// app.post("/users", function(res, req) {
+//
+// });
 
-
-function addUser(firstName, lastName) {
+function addUser(firstName, lastName, res) {
   var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
   client.connect(function(err) {
     if (err) {
@@ -142,45 +201,28 @@ function addUser(firstName, lastName) {
 
     client.query(input, [firstName, lastName], function(error, results) {
       console.log(results.rows);
+      res.cookie("id",results.rows[0].id);
       client.end();
+      res.render("moar");
     });
   });
 }
 
-function modifyUser(age, city, homepage, color) {
+function modifyUser(age, city, homepage, color, id) {
     var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
     client.connect(function(error) {
         if (error) {
             console.log("cant connect to database");
             throw error;
         }
-        var putin = "INSERT INTO user_profiles (age, city, homepage, color) VALUES ($1, $2, $3, $4) RETURNING id";
+        var putin = "INSERT INTO user_profiles (age, city, homepage, color, usernames_id) VALUES ($1, $2, $3, $4, $5)";
 
-        client.query(putin, [age, city, homepage, color], function(error, results) {
-            console.log(results.rows);
+        client.query(putin, [age, city, homepage, color, id], function(error, results) {
+            // console.log(results.rows);
             client.end();
         });
     });
 }
-
-// var redis = require("redis");
-// var client = redis.createClient({
-//     host: "localhost",
-//     port: 6379
-// });
-//
-// client.on('error', function(err) {
-//     console.log(err);
-// });
-//
-// client.setex("city", 60, "berlin", function(err, data) {
-//     if (err) {
-//         return console.log(err);
-//     }
-//     console.log('We captured the "city"');
-//
-//     client.get("city")
-// })
 
 app.post ("/name", function(req, res, next) {
     var firstName = req.body.firstName;
@@ -188,19 +230,20 @@ app.post ("/name", function(req, res, next) {
     res.cookie("firstName", firstName);
     res.cookie("lastName", lastName);
     feedMeArrays.firstName = firstName;
-    addUser(firstName,lastName);
-    console.log(firstName);
-    res.render("moar");
+    addUser(firstName,lastName,res);
 });
 
 app.post ("/moar", function (req, res, next) {
     var age = req.body.age,
     city = req.body.city,
     homepage = req.body.homepage,
-    color = req.body.color;
-    modifyUser(age,city,homepage,color)
+    color = req.body.color,
+    id = req.cookies.id;
+    modifyUser(age,city,homepage,color,id);
     res.render("hello", feedMeArrays);
 })
+
+// app.post ()
 
 app.get("/hello", function (req, res) {
     res.render("hello", feedMeArrays);

@@ -14,13 +14,33 @@
 
  <body>
    <h2> Hello there, {{cookieName}}, I have been expecting you </h2>
-    <ul>
+
+<p>Filter your options because standards:</p>
+<form id="selectah">
+        <select name="city" form="selectah">
+            {{#city}}
+          <option value={{.}}>{{.}}</option>
+            {{/city}}
+      </select>
+      <select name="color" form="selectah">
+           {{#color}}
+          <option value={{.}}>{{.}}</option>
+          {{/color}}
+      </select>
+      <input type="submit" id="selectah">
+</form>
+       <ol>
    {{#myUsers}}
-      <li> {{id}} {{first_name}} {{last_name}}
+      <li> {{first_name}} {{last_name}}
+          <ul>
+              <li> {{age}}
+             <li> {{homepage}}
+             <li> {{city}}
+            <li>  {{color}}
+          </ul>
    {{/myUsers}}
-   </ul>
+   </ol>
    </script>
-   "ctrl-alt-o": "application:add-project-folder",
  </body>
 
  </html>
