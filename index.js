@@ -107,6 +107,10 @@ app.get("/tweets", function(req, res, next) {
 
 app.get("/users", function (req, res, next) {
     console.log(req.query);
+    var objectForHandlebars = {},
+    allMyUsers = [],
+    client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users"),
+    checkEm;
 
     function createArrForHandlebars(results) {
         var allMyUsers = results.rows;
@@ -125,60 +129,57 @@ app.get("/users", function (req, res, next) {
                 }
             });
             return checkArray;
-        }
-
+        };
             cityItems = makeUniqueItems(cityItems),
             colorItems = makeUniqueItems(colorItems);
-            console.log(colorItems);
-            res.render("users", {
-                city: cityItems,
-                color: colorItems,
-                myUsers: allMyUsers,
-                cookieName : req.cookies.firstName
-            });
+            objectForHandlebars = {
+            city: cityItems,
+            color: colorItems,
+            myUsers: allMyUsers,
+            cookieName : req.cookies.firstName
+            };
+            res.render("users", objectForHandlebars);
     };
 
-    cache.get("users", function(err, data){
-        console.log(err);
-        if (data !== null) {
-            var results = JSON.parse(data);
-            return createArrForHandlebars(results);
-        }
-    });
-
-
-    var allMyUsers = [];
-    var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
     client.connect(function(err) {
         if (err) {
             console.log("couldnt connect to the tables yo");
             throw err;
         }
-        var checkEm;
-            if (req.query === "") {
-                client.query("SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id;"
-                , function(error, results) {
-                    if (error) {
-                        console.log("could not get usernames, fam");
-                        throw error;
+
+            if (Object.keys(req.query).length === 0) {
+                cache.get("userProfiles", function(err, data){
+                    console.log(err);
+                    if (data !== null) {
+                        var results = JSON.parse(data);
+                        res.render("users", results);
+                        return;
                     }
-                    checkEm = results;
-                    var cityItems = [],
-                    colorItems = [];
-                    // console.log(checkEm);
-                    createArrForHandlebars(checkEm);
-                    client.end();
+                    client.query("SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id;"
+                    , function(error, results) {
+                        if (error) {
+                            console.log("could not get usernames, fam");
+                            throw error;
+                        }
+                        checkEm = results;
+                        var cityItems = [],
+                        colorItems = [];
+                        createArrForHandlebars(checkEm);
+                        cache.set("userProfiles", JSON.stringify(objectForHandlebars));
+                        client.end();
+                        return;
+                    });
                 });
-                // console.log(checkEm);
             } else {
                 var city = req.query.city,
                 color = req.query.color,
-                input = "SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id WHERE city = '" +city+"' AND color = '" + color+"';"
+                input = "SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id WHERE city = '" +city+"' AND color = '" + color+"';";
                 client.query(input, function(err, results) {
                     if (err) {
                         console.log("couldnt get specified search");
                         throw err;
                     }
+                    // console.log(checkEm);
                     checkEm = results;
                     createArrForHandlebars(checkEm);
                 })
@@ -240,7 +241,15 @@ app.post ("/moar", function (req, res, next) {
     color = req.body.color,
     id = req.cookies.id;
     modifyUser(age,city,homepage,color,id);
-    res.render("hello", feedMeArrays);
+
+    function deleteCache(req, res) {
+        return new Promise(function(resolve, reject) {
+            reject("could not delete cache");
+            cache.del("userProfiles");
+            resolve(res.render("hello", feedMeArrays));
+        })
+    }
+    deleteCache(req, res);
 })
 
 // app.post ()
