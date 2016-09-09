@@ -4,6 +4,8 @@ cache = redis.createClient({
     host: "localhost",
     port: 6379
 }),
+session = require('express-session'),
+Store = require('connect-redis')(session),
 app = express(),
 cooks,
 handles = require("express-handlebars"),
@@ -24,9 +26,16 @@ var arrayFromTwitter = [];
 app.engine("handlebars", handles());
 app.set("view engine", "handlebars");
 
-app.use(require("cookie-parser")());
-// console.log(require("cookie-parser")());
-
+app.use(session({
+    store: new Store({
+        ttl: 3000,
+        host: 'localhost',
+        port: 6379
+    }),
+    resave: false,
+    saveUninitialized: true,
+    secret: "Mr.Robot is Elliots dad"
+}));
 
 var arrayOfContent = fs.readdirSync("./projects");
 
@@ -53,12 +62,12 @@ var template = fs.readFileSync("./views/hello.handlebars");
 
 
 app.use(function(req, res, next){
-
+    console.log(req.session);
     if (req.url == "/name.html" || req.url == "/name") {
         return next();
     }
-    if (req.cookies.firstName === undefined || req.cookies.lastName === undefined) {
-        return next();
+    if (req.session.firstName === undefined || req.session.lastName === undefined) {
+        return res.sendFile(__dirname + "/statics/name.html");
     }
     next();
 });
@@ -73,6 +82,7 @@ app.use(require("body-parser").urlencoded({
 }));
 
 app.get("/name", function (req, res) {
+
     res.sendFile(__dirname + "/statics/name.html");
 });
 
@@ -82,7 +92,7 @@ app.get("/:project/description", function (req, res) {
     if (arrayOfContent.indexOf(req.params.project) != -1) {
         res.render(req.params.project + "/index", {
             array:[{
-                firstName: req.cookies.firstName,
+                firstName: req.session.firstName,
                 headerLinks: "/http:" + arrayOfContent,
                 headerTags: arrayOfContent
             }]});
@@ -108,9 +118,9 @@ app.get("/tweets", function(req, res, next) {
 app.get("/users", function (req, res, next) {
     console.log(req.query);
     var objectForHandlebars = {},
-    allMyUsers = [],
-    client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users"),
-    checkEm;
+        allMyUsers = [],
+        client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users"),
+        checkEm;
 
     function createArrForHandlebars(results) {
         var allMyUsers = results.rows;
@@ -133,11 +143,11 @@ app.get("/users", function (req, res, next) {
             cityItems = makeUniqueItems(cityItems),
             colorItems = makeUniqueItems(colorItems);
             objectForHandlebars = {
-            city: cityItems,
-            color: colorItems,
-            myUsers: allMyUsers,
-            cookieName : req.cookies.firstName
-            };
+                city: cityItems,
+                color: colorItems,
+                myUsers: allMyUsers,
+                cookieName : req.session.firstName
+                };
             res.render("users", objectForHandlebars);
     };
 
@@ -151,6 +161,7 @@ app.get("/users", function (req, res, next) {
                 cache.get("userProfiles", function(err, data){
                     console.log(err);
                     if (data !== null) {
+                        console.log("cache just popped");
                         var results = JSON.parse(data);
                         res.render("users", results);
                         return;
@@ -163,7 +174,7 @@ app.get("/users", function (req, res, next) {
                         }
                         checkEm = results;
                         var cityItems = [],
-                        colorItems = [];
+                            colorItems = [];
                         createArrForHandlebars(checkEm);
                         cache.set("userProfiles", JSON.stringify(objectForHandlebars));
                         client.end();
@@ -191,7 +202,7 @@ app.get("/users", function (req, res, next) {
 //
 // });
 
-function addUser(firstName, lastName, res) {
+function addUser(firstName, lastName, res, req) {
   var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
   client.connect(function(err) {
     if (err) {
@@ -201,8 +212,9 @@ function addUser(firstName, lastName, res) {
     var input = 'INSERT INTO usernames (first_name, last_name) VALUES ($1, $2) RETURNING id';
 
     client.query(input, [firstName, lastName], function(error, results) {
-      console.log(results.rows);
-      res.cookie("id",results.rows[0].id);
+    //   console.log(results.rows);
+      req.session.postgresID = results.rows[0].id;
+      console.log(req.session.postgresID);
       client.end();
       res.render("moar");
     });
@@ -225,13 +237,21 @@ function modifyUser(age, city, homepage, color, id) {
     });
 }
 
+app.post("/logout", function(req,res) {
+    req.session.destroy(function(err) {
+        console.log(err);
+    });
+    console.log("session destroyed, returning to base");
+    res.sendFile(__dirname + "/statics/name.html");
+});
+
 app.post ("/name", function(req, res, next) {
     var firstName = req.body.firstName;
     var lastName = req.body.lastName;
-    res.cookie("firstName", firstName);
-    res.cookie("lastName", lastName);
+    req.session.firstName = firstName;
+    req.session.lastName = lastName;
     feedMeArrays.firstName = firstName;
-    addUser(firstName,lastName,res);
+    addUser(firstName,lastName,res, req);
 });
 
 app.post ("/moar", function (req, res, next) {
@@ -239,20 +259,26 @@ app.post ("/moar", function (req, res, next) {
     city = req.body.city,
     homepage = req.body.homepage,
     color = req.body.color,
-    id = req.cookies.id;
+    id = req.session.postgresID;
+    console.log(req.session.postgresID);
     modifyUser(age,city,homepage,color,id);
 
-    function deleteCache(req, res) {
+    function deleteCache() {
         return new Promise(function(resolve, reject) {
-            reject("could not delete cache");
-            cache.del("userProfiles");
-            resolve(res.render("hello", feedMeArrays));
+            console.log("deleting cache");
+            cache.del("userProfiles", function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            })
         })
     }
-    deleteCache(req, res);
+    deleteCache().then(function() {
+        res.render("hello", feedMeArrays);
+    });
 })
-
-// app.post ()
 
 app.get("/hello", function (req, res) {
     res.render("hello", feedMeArrays);

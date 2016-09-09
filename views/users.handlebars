@@ -16,6 +16,13 @@
    <h2> Hello there, {{cookieName}}, I have been expecting you </h2>
 
 <p>Filter your options because standards:</p>
+
+<div>
+    <form action="/logout" method="POST" >
+        <input value="Logout" type="submit"/>
+    </form>
+</div>
+
 <form id="selectah">
         <select name="city" form="selectah">
             {{#city}}
