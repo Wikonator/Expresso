@@ -202,17 +202,21 @@ app.get("/users", function (req, res, next) {
 //
 // });
 
-function addUser(firstName, lastName, res, req) {
+function addUser(firstName, lastName, mail, password, res, req) {
   var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
   client.connect(function(err) {
     if (err) {
       console.log("no connection happened");
       throw err;
     }
-    var input = 'INSERT INTO usernames (first_name, last_name) VALUES ($1, $2) RETURNING id';
+    var input = 'INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4) RETURNING id';
 
-    client.query(input, [firstName, lastName], function(error, results) {
-    //   console.log(results.rows);
+    client.query(input, [firstName, lastName, mail, password], function(error, results) {
+        if (error) {
+            return res.render("name", {error: "That email is already taken, fam!"})
+        }
+      console.log(results.rows);
+
       req.session.postgresID = results.rows[0].id;
       console.log(req.session.postgresID);
       client.end();
@@ -246,12 +250,14 @@ app.post("/logout", function(req,res) {
 });
 
 app.post ("/name", function(req, res, next) {
-    var firstName = req.body.firstName;
-    var lastName = req.body.lastName;
+    var firstName = req.body.firstName,
+        lastName = req.body.lastName,
+        mail = req.body.mail,
+        password = req.body.pwrd;
     req.session.firstName = firstName;
     req.session.lastName = lastName;
     feedMeArrays.firstName = firstName;
-    addUser(firstName,lastName,res, req);
+    addUser(firstName, lastName, mail, password, res, req);
 });
 
 app.post ("/moar", function (req, res, next) {
