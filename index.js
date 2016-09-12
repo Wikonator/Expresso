@@ -13,6 +13,7 @@ fs = require("fs"),
 feedMeArrays = {},
 getTwitt = require("./getTwitt.js"),
 https = require("https"),
+crypt = require("bcrypt"),
 pg = require("pg");
 
 
@@ -215,10 +216,10 @@ function addUser(firstName, lastName, mail, password, res, req) {
         if (error) {
             return res.render("name", {error: "That email is already taken, fam!"})
         }
-      console.log(results.rows);
+    //   console.log(results.rows);
 
       req.session.postgresID = results.rows[0].id;
-      console.log(req.session.postgresID);
+    //   console.log(req.session.postgresID);
       client.end();
       res.render("moar");
     });
