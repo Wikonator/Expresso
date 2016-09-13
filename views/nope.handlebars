@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Hop in</title>
+    <meta name="this is where you get in" content="just do it">
+
+    <!--[if lt IE 9]>
+      <script src = "http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+ <form action="/login" method="POST">
+     Email: <input name="Email" type="text"/>
+     password: <input name="Password" type="text"/>
+     {{#error}}
+     {{.}}<br>
+     {{/error}}
+     <input value="Log In" type="submit"/>
+ </form>
+</body>
+
+</html>

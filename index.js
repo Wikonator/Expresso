@@ -63,9 +63,18 @@ var template = fs.readFileSync("./views/hello.handlebars");
 
 
 app.use(function(req, res, next){
-    console.log(req.session);
+    // console.log(req.session);
     if (req.url == "/name.html" || req.url == "/name") {
+        console.log("name blasted");
         return next();
+    }
+    if (req.url == "/login.html" || req.url == "/login") {
+        // console.log(req.method);
+        if (req.method == "POST") {
+            console.log("these an email here!");
+            return next();
+        }
+        return res.sendFile(__dirname + "/statics/login.html");
     }
     if (req.session.firstName === undefined || req.session.lastName === undefined) {
         return res.sendFile(__dirname + "/statics/name.html");
@@ -167,7 +176,7 @@ app.get("/users", function (req, res, next) {
                         res.render("users", results);
                         return;
                     }
-                    client.query("SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id;"
+                    client.query("SELECT * FROM users JOIN user_profiles ON usernames_id = users.id;"
                     , function(error, results) {
                         if (error) {
                             console.log("could not get usernames, fam");
@@ -185,7 +194,7 @@ app.get("/users", function (req, res, next) {
             } else {
                 var city = req.query.city,
                 color = req.query.color,
-                input = "SELECT * FROM usernames JOIN user_profiles ON usernames_id = usernames.id WHERE city = '" +city+"' AND color = '" + color+"';";
+                input = "SELECT * FROM users JOIN user_profiles ON usernames_id = users.id WHERE city = '" +city+"' AND color = '" + color+"';";
                 client.query(input, function(err, results) {
                     if (err) {
                         console.log("couldnt get specified search");
@@ -247,18 +256,81 @@ app.post("/logout", function(req,res) {
         console.log(err);
     });
     console.log("session destroyed, returning to base");
-    res.sendFile(__dirname + "/statics/name.html");
+    res.sendFile(__dirname + "/statics/login.html");
+});
+
+
+app.post("/login", function (req, res, next) {
+    var mail = req.body.Email,
+        pwrd = req.body.Password;
+        // console.log(pwrd);
+        function authentication(mail, pwrd) {
+            var hashedPass = "";
+            var client = new pg.Client("postgres://spiced:spiced1@localhost:5432/Users");
+            client.connect(function(error) {
+                if (error) {
+                    console.log("can't connect to base, boss");
+                    throw error;
+                }
+                client.query("SELECT * FROM users WHERE users.email ='" +mail+"';", function(error, results){
+                    if (error) {
+                        console.log(error);
+                    }
+                    var user = results.rows[0];
+                    // console.log(user);
+                    hashedPass = user.password;
+                    // console.log(hashedPass);
+                    client.end();
+                    function comparePasses(pwrd, hashedPass, res) {
+                        // console.log("comparing passwords");
+                        crypt.compare(pwrd, hashedPass, function(err, doesMatch) {
+                            if (err) {
+                                return res.render("nope", {error: "I've got 99 passwords, but this ain't one"});
+                            }
+                            console.log(user);
+                            req.session.firstName = user.first_name;
+                            console.log(req.session.firstName);
+                            req.session.lastName = user.last_name;
+                            req.session.mail = user.email;
+                            feedMeArrays.firstName = user.first_name;
+                            res.render("hello", feedMeArrays);
+                        })
+                    }
+                    comparePasses(pwrd, hashedPass, res);
+                });
+
+            })
+        }
+        authentication(mail,pwrd);
 });
 
 app.post ("/name", function(req, res, next) {
     var firstName = req.body.firstName,
         lastName = req.body.lastName,
         mail = req.body.mail,
-        password = req.body.pwrd;
+        plainPassword = req.body.pwrd;
     req.session.firstName = firstName;
     req.session.lastName = lastName;
+    req.session.mail = mail;
     feedMeArrays.firstName = firstName;
-    addUser(firstName, lastName, mail, password, res, req);
+
+    function hashPass(plainPassword) {
+        crypt.genSalt(function(err,salt) {
+            if (err) {
+                return err;
+            }
+            console.log(salt);
+            crypt.hash(plainPassword, salt, function(err, hash) {
+                if (err) {
+                    return err;
+                }
+                console.log(hash);
+                addUser(firstName, lastName, mail, hash, res, req);
+            });
+        });
+    };
+
+    hashPass(plainPassword);
 });
 
 app.post ("/moar", function (req, res, next) {
